@@ -144,31 +144,38 @@ def remove_fullstop(lst):
     return [item[0:-1] if item.endswith('.') else item for item in lst]
 
 
-def parse_topics_and_knowledge_points(gpt3_output):
+def parse_topics_and_knowledge_points(gpt_output):
     try:
-        # gpt3_output = gpt3_output.replace("### Analysis:", "")
-        if "**Topics:**" in gpt3_output:
-            gpt3_output = gpt3_output.replace("**Topics:**", "Topics:")
-        if "**Specific Knowledge Points:**" in gpt3_output:
-            gpt3_output = gpt3_output.replace("**Specific Knowledge Points:**", "Specific Knowledge Points:")
-        if "### Specific Knowledge Points:" in gpt3_output:
-            gpt3_output = gpt3_output.replace("### Specific Knowledge Points:", "Specific Knowledge Points:")
-        if "- Specific Knowledge Points:" in gpt3_output:
-            gpt3_output = gpt3_output.replace("- Specific Knowledge Points:", "Specific Knowledge Points:")
+        # remove thinking content from gpt-5.4
+        # <think_summaries> ... </think_summaries>
+        key = '</think_summaries>'
+        if key in gpt_output:
+            pos = gpt_output.find(key)
+            gpt_output = gpt_output[pos+len(key):]
+
+        # gpt_output = gpt_output.replace("### Analysis:", "")
+        if "**Topics:**" in gpt_output:
+            gpt_output = gpt_output.replace("**Topics:**", "Topics:")
+        if "**Specific Key Concepts:**" in gpt_output:
+            gpt_output = gpt_output.replace("**Specific Key Concepts:**", "Specific Key Concepts:")
+        if "### Specific Key Concepts:" in gpt_output:
+            gpt_output = gpt_output.replace("### Specific Key Concepts:", "Specific Key Concepts:")
+        if "- Specific Key Concepts:" in gpt_output:
+            gpt_output = gpt_output.replace("- Specific Key Concepts:", "Specific Key Concepts:")
         
-        gpt3_output = gpt3_output.replace('"', '').replace('#', '')
+        gpt_output = gpt_output.replace('"', '').replace('#', '')
         
-        pos = gpt3_output.find("Topics:")
+        pos = gpt_output.find("Topics:")
         if pos == -1:
             return None, None
 
-        kp_pos = gpt3_output.find("Specific Knowledge Points:")
+        kp_pos = gpt_output.find("Specific Key Concepts:")
         if kp_pos == -1:
             return None, None
 
-        gpt3_output = gpt3_output[pos:]
+        gpt_output = gpt_output[pos:]
 
-        topics = gpt3_output.split("Specific Knowledge Points:")[0].replace("Topics:", "").strip()
+        topics = gpt_output.split("Specific Key Concepts:")[0].replace("Topics:", "").strip()
         topics = topics.split("\n")
         # topics = [remove_para(t.split(". ")[1]).strip() for t in topics]
         # more robust
@@ -181,7 +188,7 @@ def parse_topics_and_knowledge_points(gpt3_output):
                 topics_tmp.append(topic)
         topics = topics_tmp
 
-        knowledge_points = gpt3_output.split("Specific Knowledge Points:")[1].strip()
+        knowledge_points = gpt_output.split("Specific Key Concepts:")[1].strip()
         pos = knowledge_points.find("\n\n")
         if pos != -1:
             knowledge_points = knowledge_points[:pos]
@@ -205,7 +212,7 @@ def parse_topics_and_knowledge_points(gpt3_output):
     except Exception as e:
         print(e)
         print('+'*30 + "gpt output" + '+'*30)
-        print(gpt3_output)
+        print(gpt_output)
         print('-' * 60)
         raise
 
@@ -220,6 +227,9 @@ def build_graph(concept_comp_file, topic_freq_cut, knowledge_point_freq_cut):
 
     for line in open(concept_comp_file, encoding="utf8"):
         example = json.loads(line)
+        if not "completion" in example:
+            continue
+        
         topics, knowledge_points = parse_topics_and_knowledge_points(example["completion"])
         if topics is None:
             continue
@@ -355,7 +365,8 @@ def sample_concepts(i, seed):
         return []
     starting_node = my_random_process([current_topic], current_topic2knowledge_point_count, graph.all_knowledge_points_freq, rng=rng)
 
-    path_length = rng.choice([1, 2, 3, 4, 5])
+    # path_length = rng.choice([1, 2, 3, 4, 5])
+    path_length = rng.choice([3, 4, 5, 6, 7, 8])
 
     path = weighted_random_dfs(starting_node, graph.all_knowledge2knowledge_edge, graph.all_knowledge_points_freq, path_length, rng=rng, all_adjlist=graph.all_knowledge2knowledge)
     if path is not None:
@@ -377,7 +388,10 @@ def sample_concepts(i, seed):
         count = current_topic2knowledge_point_count[node] + other_topic2knowledge_point_count[node]
         intersect_topic2knowledge_point_count[node] = count
     starting_node = my_random_process([current_topic, other_topic], intersect_topic2knowledge_point_count, graph.all_knowledge_points_freq, rng=rng)
-    path_length = rng.choice([1, 2, 3, 4, 5])
+    
+    # path_length = rng.choice([1, 2, 3, 4, 5])
+    path_length = rng.choice([3, 4, 5, 6, 7, 8])
+
     path = weighted_random_dfs(starting_node, graph.all_knowledge2knowledge_edge, graph.all_knowledge_points_freq, path_length, rng=rng, all_adjlist=graph.all_knowledge2knowledge)
     if path is not None:
         dump = {"topics": [current_topic, other_topic], "knowledge_points": path}

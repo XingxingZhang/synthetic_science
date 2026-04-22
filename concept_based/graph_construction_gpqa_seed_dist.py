@@ -150,36 +150,17 @@ def remove_fullstop(lst):
     return [item[0:-1] if item.endswith('.') else item for item in lst]
 
 
-def parse_subject_level(data):
-    """
-    Parses XML-like data using regex and returns a dictionary with 'level' and 'subject'.
-
-    Args:
-        data (str): The XML-like data string to parse.
-
-    Returns:
-        dict: A dictionary with keys 'level' and 'subject'. Values are None if parsing fails.
-    """
-    patterns = {
-        'level': r'<level>\s*(.*?)\s*</level>',
-        'subject': r'<subject>\s*(.*?)\s*</subject>'
-    }
-    result = {}
-    
-    for key, pattern in patterns.items():
-        match = re.search(pattern, data, re.IGNORECASE | re.DOTALL)
-        if match:
-            value = match.group(1).strip()
-            result[key] = value if value else None
-        else:
-            result[key] = None
-    
-    return result
-
-
 def parse_concept_extraction_completion(completion):
-    parsed_item = parse_subject_level(completion)
+    parsed_item = {}
+
     try:
+        # remove thinking content from gpt-5.4
+        # <think_summaries> ... </think_summaries>
+        key = '</think_summaries>'
+        if key in completion:
+            pos = completion.find(key)
+            completion = completion[pos+len(key):]
+        
         completion = completion.strip()
         if completion.startswith('"') and completion.endswith('"'):
             completion = completion[1:-1]
@@ -191,12 +172,12 @@ def parse_concept_extraction_completion(completion):
             completion = completion.replace("**Topics:**", "Topics:")
         # Key Concepts:
         # simplify "Specific Key Concepts"
-        if "**Key Concepts:**" in completion:
-            completion = completion.replace("**Key Concepts:**", "Key Concepts:")
-        if "### Key Concepts:" in completion:
-            completion = completion.replace("### Key Concepts:", "Key Concepts:")
-        if "- Key Concepts:" in completion:
-            completion = completion.replace("- Key Concepts:", "Key Concepts:")
+        if "**Specific Key Concepts:**" in completion:
+            completion = completion.replace("**Specific Key Concepts:**", "Specific Key Concepts:")
+        if "### Specific Key Concepts:" in completion:
+            completion = completion.replace("### Specific Key Concepts:", "Specific Key Concepts:")
+        if "- Specific Key Concepts:" in completion:
+            completion = completion.replace("- Specific Key Concepts:", "Specific Key Concepts:")
         
         completion = completion.replace('"', '').replace('#', '')
         
@@ -206,7 +187,7 @@ def parse_concept_extraction_completion(completion):
             parsed_item['knowledge_points'] = None
             return parsed_item
 
-        kp_pos = completion.find("Key Concepts:")
+        kp_pos = completion.find("Specific Key Concepts:")
         if kp_pos == -1:
             parsed_item['topics'] = None
             parsed_item['knowledge_points'] = None
@@ -214,7 +195,7 @@ def parse_concept_extraction_completion(completion):
 
         completion = completion[pos:]
 
-        topics = completion.split("Key Concepts:")[0].replace("Topics:", "").strip()
+        topics = completion.split("Specific Key Concepts:")[0].replace("Topics:", "").strip()
         topics = topics.split("\n")
         # more robust
         topics_tmp = []
@@ -227,7 +208,7 @@ def parse_concept_extraction_completion(completion):
                 topics_tmp.append(topic)
         topics = topics_tmp
 
-        knowledge_points = completion.split("Key Concepts:")[1].strip()
+        knowledge_points = completion.split("Specific Key Concepts:")[1].strip()
         pos = knowledge_points.find("\n\n")
         if pos != -1:
             knowledge_points = knowledge_points[:pos]
@@ -270,6 +251,10 @@ def build_graph(concept_comp_file, topic_freq_cut, knowledge_point_freq_cut):
 
     for line in open(concept_comp_file, encoding="utf8"):
         example = json.loads(line)
+
+        if not "completion" in example:
+            continue
+
         parsed_item = parse_concept_extraction_completion(example["completion"])
         topics, knowledge_points = parsed_item["topics"], parsed_item["knowledge_points"]
         if topics is None:
@@ -277,8 +262,6 @@ def build_graph(concept_comp_file, topic_freq_cut, knowledge_point_freq_cut):
 
         example["topics"] = topics
         example["knowledge_points"] = knowledge_points
-        example["level"] = parsed_item["level"]
-        example["subject"] = parsed_item["subject"]
 
         all_examples.append(example)
         graph.add(topics, knowledge_points)
@@ -471,7 +454,7 @@ def main(
     end_epoch=1000,
     topic_freq_cut=1, knowledge_point_freq_cut=1,
     ncpus=32,
-    max_num_topics=3, min_num_kp=3, max_num_kp=10,
+    max_num_topics=3, min_num_kp=3, max_num_kp=8,
 ):
     if ncpus < 0:
         ncpus = None
