@@ -16,6 +16,31 @@ import numpy as np
 from typing import List, Dict, Tuple
 from collections import OrderedDict, deque, defaultdict, Counter
 
+import random
+random.seed(42)
+
+
+GPQA_QUESTION_TEMPLATE = """
+{Question}
+
+A) {A}
+B) {B}
+C) {C}
+D) {D}
+"""
+
+
+def make_gpqa_multi_choice_question(data):
+    gold_index = random.randint(0, 3)
+    choices = [data["Incorrect Answer 1"], data["Incorrect Answer 2"], data["Incorrect Answer 3"]]
+    choices.insert(gold_index, data["Correct Answer"])
+    mc_question = GPQA_QUESTION_TEMPLATE.format(
+        A=choices[0], B=choices[1], C=choices[2], D=choices[3], Question=data["Question"]
+    )
+
+    return mc_question
+
+
 
 def create_key(topics, knowledge_points):
     key_topics = [t.strip().lower() for t in topics if t.strip().lower() != ""]
@@ -30,7 +55,7 @@ def load_demonstrations(few_shot_file):
     with open(few_shot_file) as fd:
         for line in fd:
             example = json.loads(line)
-            example["question"] = example["question"].replace("\n\n", "\n")
+            example["question"] = make_gpqa_multi_choice_question(example) # example["question"].replace("\n\n", "\n")
             keywords = tuple(sorted(example["knowledge_points"]))
             corpus[keywords].append(example)
             train_examples.append(example)
@@ -142,7 +167,7 @@ def get_prompt(example_id, example, prompt_template):
     knowledge_points = "\n".join([f"{i+1}. {t}" for i, t in enumerate(example["knowledge_points"])])
     my_example = f"Topics:\n{topics}\nKnowledge Points:\n{knowledge_points}"
 
-    top_k_few_shot_examples = query_index_topk(example["knowledge_points"], inverted_index, k=8)
+    top_k_few_shot_examples = query_index_topk(example["knowledge_points"], inverted_index, k=4)
     few_shot_examples = []
     for keywords, examples in top_k_few_shot_examples.items():
         examples = round_robin_sort(examples)

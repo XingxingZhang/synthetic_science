@@ -17,7 +17,8 @@ outdir=/data/xingxing/gpqa_dataset/Nemotron-Science-v1_problems.fixed.completion
 
 mkdir -p ${outdir}
 
-for id in `seq 7 -1 0`
+# for id in `seq 7 -1 0`
+for id in 5 6 7 8
 do
 
     outfile=${outdir}/${id}.${model}_${reason_effort}.jsonl
