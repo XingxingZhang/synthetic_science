@@ -1,0 +1,16 @@
+<question>
+At \(298\,\mathrm{K}\), how many of the following compounds can exist as configurationally stable optically active stereoisomers?
+
+1. cis-1,2-dimethylcyclopropane  
+2. trans-1,2-dimethylcyclopropane  
+3. penta-2,3-diene  
+4. \((E)\)-1,2-dichloroethene  
+5. [1,1'-binaphthalene]-2,2'-diol  
+6. bicyclo[2.2.1]hept-5-ene-2,3-dicarboxylic anhydride  
+7. [1,1'-biphenyl]-4,4'-diol  
+
+A) 2  
+B) 3  
+C) 4  
+D) 5
+</question>
