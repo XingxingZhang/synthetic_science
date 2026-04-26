@@ -32,8 +32,8 @@ def main(row_index=0, model="gpt-5.4", workdir="/home/xizhang/projects/synthetic
         "--model", model, "--sandbox", "read-only", "--ephemeral",
         "--output-last-message", output_file, "-",
     ]
-    # wrapped_prompt = PROMPT_TEMPLATE.format(instruction=prompt)
-    wrapped_prompt = prompt
+    wrapped_prompt = PROMPT_TEMPLATE.format(instruction=prompt)
+    # wrapped_prompt = prompt
     subprocess.run(cmd, input=wrapped_prompt, text=True, check=True)
 
 if __name__ == "__main__":
