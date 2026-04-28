@@ -10,8 +10,10 @@ ncpus=32
 
 curdir=`pwd`
 
-promptfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.20k.prompts.jsonl
-outfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.20k.p1.completions.${model}_${reason_effort}.jsonl
+# promptfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.20k.prompts.jsonl
+# outfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.20k.p1.completions.${model}_${reason_effort}.jsonl
+promptfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.remaining_after_20k.prompts.jsonl
+outfile=${curdir}/concept_based/outputs_simple/gpqa_extended-diamond.concept_completions.gpt-5.4_medium.v2.concept_graph.epoch0-100.remaining_after_20k.p1.completions.${model}_${reason_effort}.jsonl
 
 cd $codedir
 
@@ -22,5 +24,4 @@ python -u azure/gpt_crawler_mp.py $promptfile $outfile --model $model --num_proc
     --max_num_tries 123456789 --max_text_tokens 128000 --max_gen_tokens 96000  2>&1 | tee ${outfile}.log.txt
 
 cd $curdir
-
 
